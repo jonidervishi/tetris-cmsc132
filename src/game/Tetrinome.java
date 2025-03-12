@@ -4,18 +4,25 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class Tetrinome extends Polygon implements KeyListener{
     private Point[] points;
     private TetrinomeType type;
     private static final int TILE_SIZE = 30;
     private Board board;
+    private boolean placed; // Flag to indicate if the Tetrinome is placed
+
     public Tetrinome(TetrinomeType type, Point position, Board board) {
         super(getPointsForType(type), position, 0);
         this.points = getPointsForType(type);
         this.type = type;
         this.board = board;
+        this.placed = false; // Initialize as not placed
     }
+
     private static Point[] getPointsForType(TetrinomeType type) {
         Point[] points = new Point[]{new Point(0, 0), new Point(0, 1), new Point(1, 1), new Point(1, 0)};
         switch (type) {
@@ -45,7 +52,7 @@ public class Tetrinome extends Polygon implements KeyListener{
         }
         return points;
     }
-    
+
     @Override
     public Point[] getPoints() {
         Point[] transformedPoints = new Point[points.length];
@@ -57,16 +64,16 @@ public class Tetrinome extends Polygon implements KeyListener{
         Point center = findCenter();
 
         for (int i = 0; i < points.length; i++) {
-            int x = (int) points[i].x - (int) center.x;
-            int y = (int) points[i].y - (int) center.y;
+            int x = (int)(points[i].x - center.x);
+            int y = (int)(points[i].y - center.y);
 
             // Apply rotation around the center
             int rotatedX = (int) Math.round(x * cos - y * sin);
             int rotatedY = (int) Math.round(x * sin + y * cos);
 
             // Apply translation
-            int translatedX = (int) rotatedX + (int) center.x + (int) position.x;
-            int translatedY = (int) rotatedY + (int) center.y + (int) position.y;
+            int translatedX = (int)(rotatedX + center.x + position.x);
+            int translatedY = (int)(rotatedY + center.y + position.y);
 
             // Snap to grid
             int snappedX = (int) Math.round((double) translatedX / TILE_SIZE) * TILE_SIZE;
@@ -77,7 +84,24 @@ public class Tetrinome extends Polygon implements KeyListener{
 
         return transformedPoints;
     }
+
+    private Point findCenter() {
+        int sumX = 0;
+        int sumY = 0;
+        for (Point point : points) {
+            sumX += point.x;
+            sumY += point.y;
+        }
+        int centerX = sumX / points.length;
+        int centerY = sumY / points.length;
+        return new Point(centerX, centerY);
+    }
+
     public void paint(Graphics brush) {
+        if (placed) {
+            return; // Do not draw if the Tetrinome is placed
+        }
+
         brush.setColor(this.getColor());
 
         Point[] transformedPoints = this.getPoints();
@@ -89,6 +113,79 @@ public class Tetrinome extends Polygon implements KeyListener{
         }
         brush.fillPolygon(xCoords, yCoords, transformedPoints.length);
     }
+
+    public void move(boolean left, boolean right, boolean down, boolean rotate) {
+        if (placed) {
+            return; // Do not move if the Tetrinome is placed
+        }
+
+        if (left) {
+            this.position.x -= TILE_SIZE;
+            if (board.isCollision(this)) {
+                this.position.x += TILE_SIZE; // Undo move if collision detected
+            }
+        }
+        if (right) {
+            this.position.x += TILE_SIZE;
+            if (board.isCollision(this)) {
+                this.position.x -= TILE_SIZE; // Undo move if collision detected
+            }
+        }
+        if (down) {
+            this.position.y += TILE_SIZE;
+            if (board.isCollision(this)) {
+                this.position.y -= TILE_SIZE; // Undo move if collision detected
+                board.placeTetrinome(this); // Place the Tetrinome if it touches the bottom
+            }
+        }
+        if (rotate) {
+            this.rotation += 90;
+            if (board.isCollision(this)) {
+                this.rotation -= 90; // Undo rotation if collision detected
+            }
+        }
+    }
+
+    public double getRotation(){
+        return this.rotation;
+    }
+
+    public TetrinomeType getType() {
+        return this.type;
+    }
+
+    public static Point getOrigin(TetrinomeType type) {
+        switch (type) {
+            case I, O, T, Z, L:
+                return new Point(0, 0);
+            case S, J:
+                return new Point(1 * TILE_SIZE, 0);
+            default:
+                throw new IllegalArgumentException("Unknown Tetrinome type: " + type);
+        }
+    }
+
+    public Color getColor() {
+        switch (this.type) {
+            case I:
+                return Color.CYAN;
+            case O:
+                return Color.YELLOW;
+            case T:
+                return Color.MAGENTA;
+            case S:
+                return Color.GREEN;
+            case Z:
+                return Color.RED;
+            case J:
+                return Color.BLUE;
+            case L:
+                return Color.ORANGE;
+            default:
+                throw new IllegalArgumentException("Unknown Tetrinome type: " + this.type);
+        }
+    }
+
     @Override
     public void keyPressed(KeyEvent e) {
         switch (e.getKeyCode()) {
@@ -112,64 +209,11 @@ public class Tetrinome extends Polygon implements KeyListener{
 
     @Override
     public void keyTyped(KeyEvent e) {}
-    public void move(boolean left, boolean right, boolean down, boolean rotate){
-        if (left) {
-            this.position.x -= TILE_SIZE;
-            if (board.isCollision(this)) {
-                this.position.x += TILE_SIZE; // Undo move if collision detected
-            }
-        }
-        if (right) {
-            this.position.x += TILE_SIZE;
-            if (board.isCollision(this)) {
-                this.position.x -= TILE_SIZE; // Undo move if collision detected
-            }
-        }
-        if (down) {
-            this.position.y += TILE_SIZE;
-            if (board.isCollision(this)) {
-                this.position.y -= TILE_SIZE; // Undo move if collision detected
-            }
-        }
-        if (rotate) {
-            this.rotation += 90;
-            if (board.isCollision(this)) {
-                this.rotation -= 90; // Undo rotation if collision detected
-            }
-        }
-    }
     
-    public TetrinomeType getType() {
-        return this.type;
+    public void setPlaced(boolean placed) {
+        this.placed = placed;
     }
-    public static Point getOrigin(TetrinomeType type) {
-        switch (type) {
-            case I, O, T, Z, L:
-                return new Point(0, 0);
-            case S, J:
-                return new Point(1 * TILE_SIZE, 0);
-            default:
-                throw new IllegalArgumentException("Unknown Tetrinome type: " + type);
-        }
-    }
-    public Color getColor() {
-        switch (this.type) {
-            case I:
-                return Color.CYAN;
-            case O:
-                return Color.YELLOW;
-            case T:
-                return Color.MAGENTA;
-            case S:
-                return Color.GREEN;
-            case Z:
-                return Color.RED;
-            case J:
-                return Color.BLUE;
-            case L:
-                return Color.ORANGE;
-            default:
-                throw new IllegalArgumentException("Unknown Tetrinome type: " + this.type);
-        }
+    public boolean isPlaced() {
+        return placed;
     }
 }

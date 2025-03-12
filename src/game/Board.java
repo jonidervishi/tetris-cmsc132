@@ -30,8 +30,8 @@ public class Board {
         this.grid = new int[height][width]; // Initialize the grid
 
         // Calculate offsets to center the board
-        this.offsetX = (gameWidth - width * cellSize) / 2;
-        this.offsetY = (gameHeight - height * cellSize) / 2;
+        this.offsetX = ((gameWidth - width * cellSize) / 2 / cellSize) * cellSize;
+        this.offsetY = ((gameHeight - height * cellSize) / 2 / cellSize) * cellSize;
     }
 
     /**
@@ -40,7 +40,17 @@ public class Board {
      * @param brush The Graphics object used for rendering.
      */
     public void draw(Graphics brush) {
-        // Draw the grid without grid lines
+        // Draw the grid lines
+        brush.setColor(Color.GRAY);
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                int x = offsetX + col * cellSize;
+                int y = offsetY + row * cellSize;
+                brush.drawRect(x, y, cellSize, cellSize);
+            }
+        }
+
+        // Draw the occupied cells
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
                 int x = offsetX + col * cellSize;
@@ -63,15 +73,29 @@ public class Board {
     }
 
     /**
-     * Checks if a Tetromino collides with the board or other Tetrominoes.
+     * Checks if a Tetrinome collides with the board or other Tetrinomes.
      *
-     * @param t The Tetromino to check for collisions.
+     * @param t The Tetrinome to check for collisions.
      * @return True if a collision is detected, false otherwise.
      */
-    // public boolean isCollision(Tetromino t) {
-    //     // Logic to check for collisions
-    //     return false;
-    // }
+    public boolean isCollision(Tetrinome t) {
+        Point[] points = t.getPoints();
+        for (Point point : points) {
+            int col = (int) Math.floor((point.x - offsetX) / cellSize)-1;
+            int row = (int) Math.floor((point.y - offsetY) / cellSize)-1;
+
+            // Check if the point is outside the board boundaries
+            if (col < -1 || col >= width || row < -1 || row >= height) {
+                return true;
+            }
+
+            // Check if the point collides with an occupied cell
+            if (grid[row][col] != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * Adds collision points on the bottom row and sides of the board.

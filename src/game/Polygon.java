@@ -42,6 +42,7 @@ class Polygon {
   // "getPoints" applies the rotation and offset to the shape of the polygon.
   public Point[] getPoints() {
     Point center = findCenter();
+    //Point center = shape[0].clone();
     Point[] points = new Point[shape.length];
     for (int i = 0; i < shape.length; i++) {
 //    for (Point p : shape) {
@@ -90,7 +91,7 @@ class Polygon {
   }
   
   // "findCenter" implements another bit of math.
-  private Point findCenter() {
+  protected Point findCenter() {
     Point sum = new Point(0,0);
     for (int i = 0, j = 1; i < shape.length; i++, j=(j+1)%shape.length) {
       sum.x += (shape[i].x + shape[j].x)

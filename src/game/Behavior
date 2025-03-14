@@ -1,1 +1,6 @@
+package game;
 
+@FunctionalInterface
+public interface Behavior {
+    void apply(Tetrinome t);
+}

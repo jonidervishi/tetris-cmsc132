@@ -18,7 +18,6 @@ public class Board {
     private int cellSize; // Size of each cell in pixels
     private int offsetX;  // Horizontal offset to center the board
     private int offsetY;  // Vertical offset to center the board
-    private TetrinomeController controller; // Tetrinome controller
 
     /**
      * Constructs a new Board instance.
@@ -36,98 +35,12 @@ public class Board {
         this.grid = new int[height][width + 1]; // Initialize the grid with an extra column
 
         // Calculate offsets to center the board
-        this.offsetX = ((gameWidth - width * cellSize) / 2 / cellSize) * cellSize;
-        this.offsetY = ((gameHeight - height * cellSize) / 2 / cellSize) * cellSize;
+        this.offsetX = ((gameWidth - (width * cellSize)) / 2 / cellSize) * cellSize;
+        this.offsetY = ((gameHeight - (height * cellSize)) / 2 / cellSize) * cellSize;
     }
 
-    /**
-     * Inner class for managing Tetrinomes and handling key events.
-     */
-    public class TetrinomeController implements KeyListener {
-        private List<Tetrinome> tetrinomeBag; // Bag of Tetrinomes for random generation
-        private Tetrinome activeTetrinome;    // Currently active Tetrinome
+    
 
-        public TetrinomeController() {
-            this.tetrinomeBag = new ArrayList<>();
-            this.activeTetrinome = null;
-            refillBag(); // Fill the bag with Tetrinomes
-            spawnNextTetrinome(); // Spawn the first Tetrinome
-        }
-
-        /**
-         * Refills the bag with one of each Tetrinome type.
-         */
-        private void refillBag() {
-            tetrinomeBag.clear();
-            for (TetrinomeType type : TetrinomeType.values()) {
-                tetrinomeBag.add(new Tetrinome(type, new Point(12 * cellSize, 0), Board.this));
-            }
-            Collections.shuffle(tetrinomeBag); // Shuffle the bag for randomness
-        }
-
-        /**
-         * Spawns the next Tetrinome from the bag.
-         */
-        private void spawnNextTetrinome() {
-            if (tetrinomeBag.isEmpty()) {
-                refillBag(); // Refill the bag if empty
-            }
-            activeTetrinome = tetrinomeBag.remove(0); // Get the next Tetrinome
-            activeTetrinome.setPlaced(false); // Ensure it's not marked as placed
-        }
-
-        @Override
-        public void keyPressed(KeyEvent e) {
-            if (activeTetrinome == null || activeTetrinome.isPlaced()) {
-                return; // Ignore input if no active Tetrinome or it's already placed
-            }
-
-            switch (e.getKeyCode()) {
-                case KeyEvent.VK_LEFT:
-                    activeTetrinome.move(true, false, false, false);
-                    break;
-                case KeyEvent.VK_RIGHT:
-                    activeTetrinome.move(false, true, false, false);
-                    break;
-                case KeyEvent.VK_DOWN:
-                    activeTetrinome.move(false, false, true, false);
-                    break;
-                case KeyEvent.VK_UP:
-                    activeTetrinome.move(false, false, false, true);
-                    break;
-            }
-
-            // Check if the active Tetrinome is placed
-            if (activeTetrinome.isPlaced()) {
-                addTetrinomeToGrid(activeTetrinome); // Add the Tetrinome to the grid
-                spawnNextTetrinome(); // Spawn a new Tetrinome
-            }
-        }
-
-        @Override
-        public void keyReleased(KeyEvent e) {}
-
-        @Override
-        public void keyTyped(KeyEvent e) {}
-
-        /**
-         * Gets the currently active Tetrinome.
-         *
-         * @return The active Tetrinome.
-         */
-        public Tetrinome getActiveTetrinome() {
-            return activeTetrinome;
-        }
-    }
-
-    /**
-     * Gets the TetrinomeController for this board.
-     *
-     * @return The TetrinomeController.
-     */
-    public TetrinomeController getController() {
-        return controller;
-    }
 
     /**
      * Draws the board using the provided Graphics object.
@@ -161,13 +74,6 @@ public class Board {
     }
 
     /**
-     * Clears completed lines on the board.
-     */
-    public void clearLines() {
-        // Logic to clear completed lines
-    }
-
-    /**
      * Checks if a Tetrinome collides with the board or other Tetrinomes.
      *
      * @param t The Tetrinome to check for collisions.
@@ -191,6 +97,63 @@ public class Board {
         }
         return false;
     }
+    /**
+     * Clears completed rows and shifts all rows above down.
+     */
+    public void clearLines() {
+        // Anonymous class to handle row clearing and shifting logic
+        Runnable clearAndShiftRows = new Runnable() {
+            @Override
+            public void run() {
+                for (int row = height - 1; row >= 0; row--) {
+                    // Check if the row is full
+                    boolean isFull = true;
+                    for (int col = 0; col < width; col++) {
+                        if (grid[row][col] == 0) {
+                            isFull = false;
+                            break;
+                        }
+                    }
+
+                    // If the row is full, clear it and shift rows above down
+                    if (isFull) {
+                        clearRow(row);
+                        shiftRowsDown(row);
+                        row++; // Recheck the same row after shifting
+                    }
+                }
+            }
+
+            /**
+             * Clears a specific row by setting all its cells to 0.
+             *
+             * @param row The row index to clear.
+             */
+            private void clearRow(int row) {
+                for (int col = 0; col < width; col++) {
+                    grid[row][col] = 0;
+                }
+            }
+
+            /**
+             * Shifts all rows above the given row down by one.
+             *
+             * @param startRow The row index to start shifting from.
+             */
+            private void shiftRowsDown(int startRow) {
+                for (int row = startRow; row > 0; row--) {
+                    for (int col = 0; col < width; col++) {
+                        grid[row][col] = grid[row - 1][col];
+                    }
+                }
+
+                // Clear the top row after shifting
+                for (int col = 0; col < width; col++) {
+                    grid[0][col] = 0;
+                }
+            }
+        };
+    }
 
     /**
      * Places the Tetrinome on the board if it touches the bottom collision points.
@@ -201,12 +164,13 @@ public class Board {
         Point[] points = t.getPoints();
         for (Point point : points) {
             int col = (int) Math.floor((point.x - offsetX) / cellSize);
-            int row = (int) Math.floor((point.y - offsetY) / cellSize);
+            int row = (int) Math.floor((point.y - offsetY) / cellSize) + 1;
 
             // Check if the point is at the bottom of the board
             if (row >= height - 1) {
                 addTetrinomeToGrid(t);
                 t.setPlaced(true); // Mark the Tetrinome as placed
+                clearLines();
                 return;
             }
 
@@ -214,6 +178,7 @@ public class Board {
             if (grid[row + 1][col] != 0) {
                 addTetrinomeToGrid(t);
                 t.setPlaced(true); // Mark the Tetrinome as placed
+                clearLines();
                 return;
             }
         }
@@ -329,7 +294,7 @@ public class Board {
                 break;
     
             default:
-                throw new IllegalArgumentException("Unknown Tetrinome type: " + t.getType());
+                break;
         }
     
         // Step 5: Convert the filtered list back to a 2D array

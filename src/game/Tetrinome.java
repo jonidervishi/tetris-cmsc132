@@ -4,25 +4,41 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
+
+/**
+ * Represents a Tetrinome (Tetris block) in the game.
+ * Handles the Tetrinome's shape, movement, rotation, and rendering.
+ */
 public class Tetrinome extends Polygon implements KeyListener{
-    private Point[] points;
-    private TetrinomeType type;
-    private static final int TILE_SIZE = 30;
-    private Board board;
+    private Point[] points; // Points defining the shape of the Tetrinome
+    private TetrinomeType type; // The type of the Tetrinome (I, O, T, etc.)
+    private static final int TILE_SIZE = 30; // Size of each tile in pixels
+    private Board board; // The game board the Tetrinome belongs to
     private boolean placed; // Flag to indicate if the Tetrinome is placed
 
+    /**
+     * Constructs a new Tetrinome instance.
+     *
+     * @param type     The type of the Tetrinome.
+     * @param position The initial position of the Tetrinome.
+     * @param board    The game board the Tetrinome belongs to.
+     */
     public Tetrinome(TetrinomeType type, Point position, Board board) {
         super(getPointsForType(type), position, 0);
         this.points = getPointsForType(type);
         this.type = type;
         this.board = board;
         this.placed = false; // Initialize as not placed
+        // this.position = position;
     }
 
+    /**
+     * Gets the points defining the shape of the Tetrinome based on its type.
+     *
+     * @param type The type of the Tetrinome.
+     * @return An array of Points defining the Tetrinome's shape.
+     */
     private static Point[] getPointsForType(TetrinomeType type) {
         Point[] points = new Point[]{new Point(0, 0), new Point(0, 1), new Point(1, 1), new Point(1, 0)};
         switch (type) {
@@ -53,6 +69,11 @@ public class Tetrinome extends Polygon implements KeyListener{
         return points;
     }
 
+    /**
+     * Gets the transformed points of the Tetrinome after applying rotation and translation.
+     *
+     * @return An array of transformed Points.
+     */
     @Override
     public Point[] getPoints() {
         Point[] transformedPoints = new Point[points.length];
@@ -85,6 +106,11 @@ public class Tetrinome extends Polygon implements KeyListener{
         return transformedPoints;
     }
 
+    /**
+     * Finds the center point of the Tetrinome.
+     *
+     * @return The center Point of the Tetrinome.
+     */
     private Point findCenter() {
         int sumX = 0;
         int sumY = 0;
@@ -97,6 +123,11 @@ public class Tetrinome extends Polygon implements KeyListener{
         return new Point(centerX, centerY);
     }
 
+    /**
+     * Paints the Tetrinome on the screen.
+     *
+     * @param brush The Graphics object used for rendering.
+     */
     public void paint(Graphics brush) {
         if (placed) {
             return; // Do not draw if the Tetrinome is placed
@@ -114,6 +145,14 @@ public class Tetrinome extends Polygon implements KeyListener{
         brush.fillPolygon(xCoords, yCoords, transformedPoints.length);
     }
 
+    /**
+     * Moves the Tetrinome in the specified direction or rotates it.
+     *
+     * @param left   Whether to move left.
+     * @param right  Whether to move right.
+     * @param down   Whether to move down.
+     * @param rotate Whether to rotate the Tetrinome.
+     */
     public void move(boolean left, boolean right, boolean down, boolean rotate) {
         if (placed) {
             return; // Do not move if the Tetrinome is placed
@@ -146,14 +185,30 @@ public class Tetrinome extends Polygon implements KeyListener{
         }
     }
 
+    /**
+     * Gets the rotation angle of the Tetrinome.
+     *
+     * @return The rotation angle in degrees.
+     */
     public double getRotation(){
         return this.rotation;
     }
 
+    /**
+     * Gets the type of the Tetrinome.
+     *
+     * @return The TetrinomeType of the Tetrinome.
+     */
     public TetrinomeType getType() {
         return this.type;
     }
 
+    /**
+     * Gets the origin point of the Tetrinome based on its type.
+     *
+     * @param type The type of the Tetrinome.
+     * @return The origin Point of the Tetrinome.
+     */
     public static Point getOrigin(TetrinomeType type) {
         switch (type) {
             case I, O, T, Z, L:
@@ -165,6 +220,11 @@ public class Tetrinome extends Polygon implements KeyListener{
         }
     }
 
+    /**
+     * Gets the color of the Tetrinome based on its type.
+     *
+     * @return The Color of the Tetrinome.
+     */
     public Color getColor() {
         switch (this.type) {
             case I:
@@ -186,6 +246,11 @@ public class Tetrinome extends Polygon implements KeyListener{
         }
     }
 
+    /**
+     * Handles key press events to move or rotate the Tetrinome.
+     *
+     * @param e The KeyEvent triggered by the key press.
+     */
     @Override
     public void keyPressed(KeyEvent e) {
         switch (e.getKeyCode()) {
@@ -204,15 +269,36 @@ public class Tetrinome extends Polygon implements KeyListener{
         }
     }
 
+    /**
+     * Handles key release events (not used).
+     *
+     * @param e The KeyEvent triggered by the key release.
+     */
     @Override
     public void keyReleased(KeyEvent e) {}
 
+    /**
+     * Handles key typed events (not used).
+     *
+     * @param e The KeyEvent triggered by the key typed.
+     */
     @Override
     public void keyTyped(KeyEvent e) {}
-    
+
+    /**
+     * Sets whether the Tetrinome is placed on the board.
+     *
+     * @param placed True if the Tetrinome is placed, false otherwise.
+     */
     public void setPlaced(boolean placed) {
         this.placed = placed;
     }
+
+    /**
+     * Checks if the Tetrinome is placed on the board.
+     *
+     * @return True if the Tetrinome is placed, false otherwise.
+     */
     public boolean isPlaced() {
         return placed;
     }
